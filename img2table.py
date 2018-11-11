@@ -116,6 +116,7 @@ def get_table_cells(image):
     x_t, y_t, w_t, h_t = cv2.boundingRect(table_contour)
 
     white_clone = get_a_white_clone(img)
+    clone2 = get_a_white_clone(img)
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
 
@@ -128,14 +129,57 @@ def get_table_cells(image):
 
     cv2.imwrite("3_final_table.png", white_clone)
 
-    return ret_list
+    return ret_list,clone2
+
+def weak_validation(cells):
+    '''
+    Expects cells list and return cells list, 
+    removes very small contours, based on ratio of area. Where ratio 
+    between area of contour is maximum, that is where we can think
+    noise contours start
+    '''
+    length = len(cells)
+
+    if length < 1:
+        return
+
+    area_list = np.ones(len(cells))
+    k=0
+    for cell in cells:
+        area_list[k] = cell[2]*cell[3]
+        k=k+1
+
+    cells = np.array(cells)
+    idxs = np.argsort(area_list)
+    cells = cells[idxs]
+    area_list = np.sort(area_list)
+    i=0
+    prev_ratio = -1
+    index = 0
+    while i+1<len(area_list):
+        ratio = area_list[i+1]/area_list[i]
+        if ratio > prev_ratio:
+            prev_ratio = ratio
+            index = i
+        i = i+1
+
+    if prev_ratio < 6:
+        return cells
+
+    cells = cells[index+1:length,:].tolist()
+    return cells
 
 
 def main(file_to_read):
     # Locate table in image and extract individual cells
-    cells = get_table_cells(file_to_read)  # [[x, y, w, h], [x, y, w, h], ...]
+    cells, clone = get_table_cells(file_to_read)  # [[x, y, w, h], [x, y, w, h], ...]
+    cells = weak_validation(cells)
+    for cell in cells:
+        cv2.rectangle(clone, (cell[0], cell[1]), (cell[0] + cell[2], cell[1] + cell[3]), thickness=2, color=(0, 0, 0))
+    cv2.imwrite("8_final_table.png", clone)
 
-    generate_custom_image(cells, file_to_read)
+
+    #generate_custom_image(cells, file_to_read)
 
 
 main(INPUT_FILE)

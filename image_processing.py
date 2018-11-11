@@ -36,7 +36,7 @@ def detect_horizontal_and_vertical_lines(grayscale_image, image):
             length = math.sqrt(c)
 
             if length > LINE_LENGTH:
-                cv2.line(image, (x0, y0), (x1, y1), red, LINE_THICKNESS, cv2.LINE_AA)
+                cv2.line(image, (x0, y0), (x1, y1), RED, LINE_THICKNESS, cv2.LINE_AA)
 
     return image
 
