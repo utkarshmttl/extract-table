@@ -3,6 +3,7 @@ import os
 import time
 
 from google.cloud import vision
+
 from constants import JSON_FILE
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = JSON_FILE
@@ -80,13 +81,13 @@ def sort_list(extracted_info):
     new_extracted_info = []
     # APPENDS ALL TEXTS ON SAME LINE INTO ONE LIST
     for info in extracted_info:
-        if info[2] - prev_y > THRESHOLD_DIFF_FOR_SAME_LINE and prev_y != -1:
+        if info[1] - prev_y > THRESHOLD_DIFF_FOR_SAME_LINE and prev_y != -1:
             final_extracted_info.append(new_extracted_info)
             new_extracted_info = [info]
-            prev_y = info[2]
+            prev_y = info[1]
         else:
             new_extracted_info.append(info)
-            prev_y = info[2]
+            prev_y = info[1]
     return final_extracted_info
 
 
@@ -109,4 +110,22 @@ def get_iou(bbox1, bbox2):
     boxBArea = (bbox2[2] - bbox2[0] + 1) * (bbox2[3] - bbox2[1] + 1)
 
     iou = interArea / float(boxAArea + boxBArea - interArea)
+    return iou
+
+
+def get_intersection_ratio(bbox1, bbox2):
+    xA = max(bbox1[0], bbox2[0])
+    yA = max(bbox1[1], bbox2[1])
+    xB = min(bbox1[2], bbox2[2])
+    yB = min(bbox1[3], bbox2[3])
+
+    interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
+
+    boxAArea = (bbox1[2] - bbox1[0] + 1) * (bbox1[3] - bbox1[1] + 1)
+    boxBArea = (bbox2[2] - bbox2[0] + 1) * (bbox2[3] - bbox2[1] + 1)
+
+    if boxAArea > boxBArea:
+        iou = interArea / float(boxBArea)
+    else:
+        iou = interArea / float(boxAArea)
     return iou
