@@ -72,7 +72,7 @@ def generate_custom_image(table_list, img_file):
 
     processed = cv2.imread("4_new_image.png")
     for info in extracted_info:
-        cv2.rectangle(processed, (info[1], info[2]), (info[3], info[4]), thickness=1, color=(0, 255, 0))
+        cv2.rectangle(processed, (info[1], info[2]), (info[3], info[4]), thickness=2, color=(0, 255, 0))
         cv2.putText(processed, info[0], (info[1], info[2]), cv2.FONT_HERSHEY_SIMPLEX, 0.3, color=(0, 0, 255))
     cv2.imwrite("5_image_with_text.png", processed)
 
@@ -120,7 +120,6 @@ def get_table_cells(image):
     x_t, y_t, w_t, h_t = cv2.boundingRect(table_contour)
 
     white_clone = get_a_white_clone(img)
-    clone2 = get_a_white_clone(img)
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
 
@@ -128,16 +127,16 @@ def get_table_cells(image):
         # Check if current contour is within table
         if x_t < x < x_t + w_t and y_t < y < y_t + h_t and curr_area > CELL_MIN_AREA:
             inner_list = [x, y, w, h]
-            cv2.rectangle(white_clone, (x, y), (x + w, y + h), thickness=1, color=(0, 0, 0))
+            cv2.rectangle(white_clone, (x, y), (x + w, y + h), thickness=2, color=(0, 0, 0))
             ret_list.append(inner_list)
 
-    cv2.imwrite("3_final_table.png", white_clone)
+    cv2.imwrite("3_table_contours.png", white_clone)
     print(white_clone.shape, img.shape)
 
-    return ret_list, clone2
+    return ret_list, img
 
 
-def weak_validation(cells):
+def weak_validation(cells, image):
     """
     Expects cells list and return cells list,
     removes very small contours, based on ratio of area. Where ratio
@@ -173,6 +172,12 @@ def weak_validation(cells):
         return cells
 
     cells = cells[index + 1:length, :].tolist()
+
+    image = get_a_white_clone(image)
+    for cell in cells:
+        cv2.rectangle(image, (cell[0], cell[1]), (cell[0] + cell[2], cell[1] + cell[3]), thickness=2, color=(0, 255, 0))
+    cv2.imwrite("4_cleaned_table.png", image)
+
     return cells
 
 
@@ -223,7 +228,7 @@ def main(file_to_read):
     # Locate table in image and extract individual cells
     cells, clone = get_table_cells(file_to_read)  # [[x, y, w, h], [x, y, w, h], ...]
     # pre-processing on table cells
-    cells = weak_validation(cells)
+    cells = weak_validation(cells, clone)
 
     cells_with_text = compare_ocr_with_cell_bboxes(cells, extracted_info)
 
