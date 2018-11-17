@@ -2,10 +2,8 @@ import math
 
 import cv2
 import numpy as np
-from constants import RED
+from constants import RED, LINE_LENGTH
 
-# Threshold for length for a black area to be considered a line
-LINE_LENGTH = 12
 
 # Line drawn after table detection
 LINE_THICKNESS = 3
@@ -29,14 +27,14 @@ def detect_horizontal_and_vertical_lines(grayscale_image, image):
         y1 = round(detected_line[0][3])
 
         # Use slope to determine if line is horizontal or vertical
-        if abs(x1 - x0) < 0.1 or abs((y1 - y0) / (x1 - x0)) < 0.1:
-            a = (x0 - x1) * (x0 - x1)
-            b = (y0 - y1) * (y0 - y1)
-            c = a + b
-            length = math.sqrt(c)
+        # if abs(x1 - x0) < 0.2 or abs((y1 - y0) / (x1 - x0)) < 0.2:
+        a = (x0 - x1) * (x0 - x1)
+        b = (y0 - y1) * (y0 - y1)
+        c = a + b
+        length = math.sqrt(c)
 
-            if length > LINE_LENGTH:
-                cv2.line(image, (x0, y0), (x1, y1), RED, LINE_THICKNESS, cv2.LINE_AA)
+        if length > LINE_LENGTH:
+            cv2.line(image, (x0, y0), (x1, y1), RED, LINE_THICKNESS, cv2.LINE_AA)
 
     return image
 
