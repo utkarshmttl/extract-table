@@ -14,6 +14,24 @@ SPECIAL_SYMBOL_THRESHOLD = 2
 THRESHOLD_DIFF_FOR_SAME_LINE = 15
 
 
+def get_left_top_right_bottom_from_document(texts):
+    extracted_info = []
+    for text in texts:
+        if len(text[0]) == 1 and text[0] in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ|.":
+            continue
+        bound = text[1]
+        # LEFTMOST POSITION OF BOUNDING BOX
+        min_x = min([vertex.x for vertex in bound.vertices])
+        # TOPMOST POSITION OF BOUNDING BOX
+        min_y = min([vertex.y for vertex in bound.vertices])
+        # RIGHTMOST POSITION OF BOUNDING BOX
+        max_x = max([vertex.x for vertex in bound.vertices])
+        # BOTTOMMOST POSITION OF BOUNDING BOX
+        max_y = max([vertex.y for vertex in bound.vertices])
+        extracted_info.append([text[0], min_x, min_y, max_x, max_y])
+    return extracted_info
+
+
 def get_left_top_right_bottom(texts):
     extracted_info = []
     for text in texts:
@@ -30,7 +48,37 @@ def get_left_top_right_bottom(texts):
     return extracted_info
 
 
-def detect_text(path):
+def detect_text_in_document(path):
+    """Detects text in the file."""
+    client = vision.ImageAnnotatorClient()
+
+    with io.open(path, 'rb') as image_file:
+        content = image_file.read()
+
+    image = vision.types.Image(content=content)
+    text_annotations = []
+    try:
+        response = client.document_text_detection(image=image)
+        for page in response.full_text_annotation.pages:
+            for block in page.blocks:
+                # print('\nBlock confidence: {}\n'.format(block.confidence))
+
+                for paragraph in block.paragraphs:
+                    # print('Paragraph confidence: {}'.format(
+                    #     paragraph.confidence))
+
+                    for word in paragraph.words:
+                        text_annotations.append([''.join([
+                            symbol.text for symbol in word.symbols]), word.bounding_box])
+    except:
+        print("Google Error Occured")
+        time.sleep(10)
+        detect_text_in_document(path)
+
+    return get_left_top_right_bottom_from_document(text_annotations)
+
+
+def detect_text_generic(path):
     """Detects text in the file."""
     client = vision.ImageAnnotatorClient()
 
@@ -43,8 +91,8 @@ def detect_text(path):
     except:
         print("Google Error Occured")
         time.sleep(10)
-        detect_text(path)
-    return response.text_annotations[1:]
+        detect_text_generic(path)
+    return get_left_top_right_bottom(response.text_annotations[1:])
 
 
 def preprocess(cell):
@@ -88,6 +136,7 @@ def sort_list(extracted_info):
         else:
             new_extracted_info.append(info)
             prev_y = info[1]
+    final_extracted_info.append(new_extracted_info)
     return final_extracted_info
 
 
